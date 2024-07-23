@@ -15,12 +15,6 @@ class PokerGame:
         self.deal_table(1) # turn
         self.deal_table(1) # river
 
-        player = Hand(Card("9", "Hearts"), Card("King", "Clubs"))
-        table = [Card("10", "Diamonds"), Card("Jack", "Spades"), Card("10", "Spades"), Card("9", "Clubs"), Card("2", "Hearts")]
-        print(player.cards)
-        print(table)
-        print(Score.is_high_card(player, table))
-
     def deal_players(self):
         for hand in self.hands:
             cards = choices(self.deck, k=2)
