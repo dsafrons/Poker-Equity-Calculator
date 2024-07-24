@@ -2,6 +2,7 @@ class Card:
     def __init__(self, value, suit):
         self.value = value
         self.suit = suit
+        self.num_value = int(value) if value.isnumeric() else {"Ace": 14, "King": 13, "Queen": 12, "Jack": 11}[value]
 
     def __repr__(self):
         return f"{self.value} of {self.suit}"

@@ -1,4 +1,19 @@
+"""def determine_winner(hands, table):
+    # classifies all the hands with all the tied comparisons in order after the classification
+    # compare the classifications first by rank of hand then by the tie comparison
+    # return index of the winning classification in hands
+    pass
+
+
+def classify_hand(hand, table):
+    pass
+
+
+def compare_classification(c1, c2):
+    pass"""
 from cards import Hand
+from collections import OrderedDict
+import numpy as np
 
 
 class ScoreHelper:
@@ -172,34 +187,62 @@ class ScoreHelper:
 class Score:
     @staticmethod
     def classify_hand(hand, table):
-        royal_flush = ScoreHelper.is_royal_flush(hand, table)
-        straight_flush = ScoreHelper.is_straight_flush(hand, table)
-        four_of_a_kind = ScoreHelper.is_four_of_a_kind(hand, table)
-        full_house = ScoreHelper.is_full_house(hand, table)
-        flush = ScoreHelper.is_flush(hand, table)
-        straight = ScoreHelper.is_straight(hand, table)
-        three_of_a_kind = ScoreHelper.is_three_of_a_kind(hand, table)
-        two_pair = ScoreHelper.is_two_pair(hand, table)
-        one_pair = ScoreHelper.is_one_pair(hand, table)
+        if ScoreHelper.is_royal_flush(hand, table):
+            return {"rank": 1, "tie-breaker": [14]}
+
+        if straight_flush := ScoreHelper.is_straight_flush(hand, table):
+            return {"rank": 2, "tie-breaker": [straight_flush.num_value]}
+
+        if four_of_a_kind := ScoreHelper.is_four_of_a_kind(hand, table):
+            return {"rank": 3, "tie-breaker": [four_of_a_kind.num_value]}
+
+        if full_house := ScoreHelper.is_full_house(hand, table):
+            return {"rank": 4, "tie-breaker": [*map(lambda c: c.num_value, full_house)]}
+
+        if flush := ScoreHelper.is_flush(hand, table):
+            return {"rank": 5, "tie-breaker": [*map(lambda c: c.num_value, flush)]}
+
+        if straight := ScoreHelper.is_straight(hand, table):
+            return {"rank": 6, "tie-breaker": [straight.num_value]}
+
+        if three_of_a_kind := ScoreHelper.is_three_of_a_kind(hand, table):
+            return {"rank": 7, "tie-breaker": [three_of_a_kind[0].num_value]}
+
+        if two_pair := ScoreHelper.is_two_pair(hand, table):
+            return {"rank": 8, "tie-breaker": [*map(lambda c: c.num_value, two_pair[0]),
+                                               *map(lambda c: c.num_value, two_pair[1])]}
+
+        if one_pair := ScoreHelper.is_one_pair(hand, table):
+            return {"rank": 9, "tie-breaker": [one_pair[0][0].num_value, *map(lambda c: c.num_value, one_pair[1])]}
+
         high_card = ScoreHelper.is_high_card(hand, table)
+        return {"rank": 10, "tie-breaker": [*map(lambda c: c.num_value, high_card)]}
 
-        if royal_flush:
-            return {"rank": 1}
-        if straight_flush:
-            return {"rank": 2, "tie-breaker": straight_flush}
-        if four_of_a_kind:
-            return {"rank": 3, "tie-breaker": four_of_a_kind}
-        if full_house:
-            return {"rank": 4, "tie-breaker": full_house}
-        if flush:
-            return {"rank": 5, "tie-breaker": flush}
-        if straight:
-            return {"rank": 6, "tie-breaker": straight}
-        if three_of_a_kind:
-            return {"rank": 7, "tie-breaker": three_of_a_kind[0]}
-        if two_pair:
-            return {"rank": 8, "tie-breaker": two_pair}
-        if one_pair:
-            return {"rank": 9, "tie-breaker": [one_pair[0][0], one_pair[1]]}
+    @staticmethod
+    def determine_winner(hands, table):
+        rank_to_hand = {1: "Royal Flush", 2: "Straight Flush", 3: "Four of a Kind", 4: "Full House", 5: "Flush",
+                        6: "Straight", 7: "Three of a Kind", 8: "Two Pair", 9: "One Pair", 10: "High Card"}
+        scores = {}
 
-        return {"rank": 10, "tie-breaker": high_card}
+        for i in range(len(hands)):
+            scores[i] = Score.classify_hand(hands[i], table)
+
+        ordered_scores = dict(sorted(scores.items(), key=lambda item: item[1]['rank']))
+        highest_score = 10
+        for key, value in dict(ordered_scores).items():
+            if value['rank'] <= highest_score:
+                highest_score = value['rank']
+            else:
+                del ordered_scores[key]
+
+        if len(ordered_scores) > 1:
+            ordered_scores = dict(sorted(ordered_scores.items(), key=lambda item: item[1]['tie-breaker'], reverse=True))
+            best_tiebreaker = list(ordered_scores.values())[0]['tie-breaker']
+            tie_idx = [idx for idx, hand in reversed(ordered_scores.items()) if hand['tie-breaker'] == best_tiebreaker]
+
+            if len(tie_idx) > 1:
+                return {"winner-index": sorted(tie_idx),
+                        "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}
+
+        return {"winner-index": list(ordered_scores.keys())[0],
+                "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}

@@ -15,6 +15,10 @@ class PokerGame:
         self.deal_table(1) # turn
         self.deal_table(1) # river
 
+        print(self.hands)
+        print(self.table)
+        print(Score.determine_winner(self.hands, self.table))
+
     def deal_players(self):
         for hand in self.hands:
             cards = choices(self.deck, k=2)
