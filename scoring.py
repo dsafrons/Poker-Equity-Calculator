@@ -12,8 +12,6 @@ def classify_hand(hand, table):
 def compare_classification(c1, c2):
     pass"""
 from cards import Hand
-from collections import OrderedDict
-import numpy as np
 
 
 class ScoreHelper:
@@ -244,5 +242,5 @@ class Score:
                 return {"winner-index": sorted(tie_idx),
                         "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}
 
-        return {"winner-index": list(ordered_scores.keys())[0],
+        return {"winner-index": [list(ordered_scores.keys())[0]],
                 "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}
