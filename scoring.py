@@ -25,15 +25,7 @@ class ScoreHelper:
 
     @staticmethod
     def greatest_to_least(cards):
-        values = ["Ace", "King", "Queen", "Jack", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
-        ordered = []
-
-        for val in values:
-            for card in cards:
-                if card.value == val:
-                    ordered.append(card)
-
-        return ordered
+        return sorted(cards, key=lambda c: c.num_value)[::-1]
 
     @staticmethod
     def is_royal_flush(hand, table):
