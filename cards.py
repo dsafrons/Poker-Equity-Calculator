@@ -11,6 +11,12 @@ class Card:
         self.num_value = int(self.value) if self.value.isnumeric() else \
             {"Ace": 14, "King": 13, "Queen": 12, "Jack": 11}[self.value]
 
+    def __eq__(self, other):
+        return isinstance(other, Card) and self.value == other.value and self.suit == other.suit
+
+    def __hash__(self):
+        return hash((self.value, self.suit))
+
     def __repr__(self):
         return f"{self.value} of {self.suit}"
 

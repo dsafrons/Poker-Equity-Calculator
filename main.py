@@ -1,7 +1,8 @@
-from scoring import Score
-from cards import Hand, Card
 from random import choice, choices
 from itertools import combinations
+from scoring import Score
+from cards import Hand, Card
+from visual import Game
 
 
 class PokerGame:
@@ -56,4 +57,5 @@ class PokerGame:
 
 
 if __name__ == "__main__":
-    poker_game = PokerGame(4)
+    game = Game(PokerGame)
+    game.run()
