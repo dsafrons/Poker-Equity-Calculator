@@ -2,7 +2,6 @@ from scoring import Score
 from cards import Hand, Card
 from random import choice, choices
 from itertools import combinations
-import pandas as pd
 
 
 class PokerGame:
@@ -17,31 +16,31 @@ class PokerGame:
         # self.deal_table(1) # turn
         # self.deal_table(1) # river
 
-        # odds = pd.DataFrame(columns=["Table", "P1", "P2", "P3", "P4", "P1T", "P2T", "P3T", "P4T"])
+        win, tie = self.calculate_odds()
+        print(self.hands)
+        print(self.table)
+        print(win)
+        print(tie)
 
-        win_odds = [0, 0, 0, 0]
-        tie_odds = [0, 0, 0, 0]
-        for i, remaining_table in enumerate(combinations(self.deck, 2)):
+    def calculate_odds(self):
+        win_odds = [0] * len(self.hands)
+        tie_odds = [0] * len(self.hands)
+        i = 0
+
+        for remaining_table in combinations(self.deck, 5 - len(self.table)):
             table = [*self.table, *remaining_table]
 
             winners = Score.determine_winner(self.hands, table)['winner-index']
             if len(winners) > 1:
                 for winner in winners:
                     tie_odds[winner] += 1 / len(winners)
-                pass
             else:
                 win_odds[winners[0]] += 1
 
-            # odds.loc[i+1] = [table, entry[0], entry[1], entry[2], entry[3]]
+            i += 1
 
-        # p1 = round(odds["P1"].sum()/len(odds)*100, 2)
-        # p2 = round(odds["P2"].sum()/len(odds)*100, 2)
-        # p3 = round(odds["P3"].sum()/len(odds)*100, 2)
-        # p4 = round(odds["P4"].sum()/len(odds)*100, 2)
-        print(list(map(lambda x: round((x/820)*100, 2), win_odds)), sum(list(map(lambda x: round((x/820)*100, 2), win_odds))))
-        print(list(map(lambda x: round((x/820)*100, 2), tie_odds)), sum(list(map(lambda x: round((x/820)*100, 2), tie_odds))))
-        print(self.hands)
-        print(self.table)
+        return (list(map(lambda odd: round((odd/i)*100, 2), win_odds)),
+                list(map(lambda odd: round((odd/i)*100, 2), tie_odds)))
 
     def deal_players(self):
         for hand in self.hands:
