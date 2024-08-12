@@ -1,3 +1,16 @@
+"""def determine_winner(hands, table):
+    # classifies all the hands with all the tied comparisons in order after the classification
+    # compare the classifications first by rank of hand then by the tie comparison
+    # return index of the winning classification in hands
+    pass
+
+
+def classify_hand(hand, table):
+    pass
+
+
+def compare_classification(c1, c2):
+    pass"""
 from cards import Hand
 
 
