@@ -1,47 +1,58 @@
-from cards import Hand
+from cards import *
 
 
 class ScoreHelper:
     @staticmethod
-    def convert_to_all_cards(hand, table):
-        all_cards = [hand.cards[0], hand.cards[1]]
-        for card in table:
-            all_cards.append(card)
+    def convert_to_all_cards(hole, table):
+        return [*hole.cards, *table]
 
-        return all_cards
+    @staticmethod
+    def cards_num_value(cards):
+        return [*map(lambda c: c.num_value, cards)]
+
+    @staticmethod
+    def keep_cards_by_suit(all_cards, suit):
+        return [card for card in all_cards if card.suit == suit]
+
+    @staticmethod
+    def keep_cards_except_value(all_cards, value, value2=None):
+        return [card for card in all_cards if card.value not in [value, value2]]
 
     @staticmethod
     def greatest_to_least(cards):
-        return sorted(cards, key=lambda c: c.num_value)[::-1]
+        return sorted(cards, key=lambda c: c.num_value, reverse=True)
 
     @staticmethod
-    def is_royal_flush(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
-        royal_flush_set = {"Ace", "King", "Queen", "Jack", "10"}
-        suits = {"Hearts": set(), "Clubs": set(), "Diamonds": set(), "Spades": set()}
+    def is_royal_flush(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        royal_flush_values = ["Ace", "King", "Queen", "Jack", "10"]
+        suits = {"Hearts": 0, "Clubs": 0, "Diamonds": 0, "Spades": 0}
 
         for card in all_cards:
-            if card.value in royal_flush_set:
-                suits[card.suit].add(card.value)
+            if card.value in royal_flush_values:
+                suits[card.suit] += 1
 
-        for suit, values in suits.items():
-            if values == royal_flush_set:
-                return True
+        for suit, num_cards in suits.items():
+            if num_cards == 5:
+                return [Card(value, suit) for value in royal_flush_values]
+
+    @staticmethod
+    def is_straight_flush(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        suits = {"Hearts": [], "Clubs": [], "Diamonds": [], "Spades": []}
+
+        for card in all_cards:
+            suits[card.suit].append(card)
+
+        for cards in suits.values():
+            if len(cards) >= 5:
+                return ScoreHelper.is_straight(Hole(cards[0], cards[1]), cards[2:])
 
         return False
 
     @staticmethod
-    def is_straight_flush(hand, table):
-        is_flush = ScoreHelper.is_flush(hand, table)
-
-        if is_flush:
-            return ScoreHelper.is_straight(Hand(is_flush[0], is_flush[1]), is_flush[2:])
-
-        return False
-
-    @staticmethod
-    def is_four_of_a_kind(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
+    def is_four_of_a_kind(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
         values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
                   "4": [], "3": [], "2": []}
 
@@ -49,41 +60,41 @@ class ScoreHelper:
             values[card.value].append(card)
 
             if len(values[card.value]) == 4:
-                return card
+                return [*values[card.value],
+                        ScoreHelper.greatest_to_least(ScoreHelper.keep_cards_except_value(all_cards, card.value))[0]]
 
         return False
 
     @staticmethod
-    def is_full_house(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
-        three_of_a_kind = ScoreHelper.is_three_of_a_kind(hand, table)
+    def is_full_house(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        three_of_a_kind = ScoreHelper.is_three_of_a_kind(hole, table)
 
         if three_of_a_kind:
-            rest = [c for c in all_cards if c not in three_of_a_kind]
-            one_pair = ScoreHelper.is_one_pair(Hand(rest[0], rest[1]), rest[2:])
+            rest = ScoreHelper.keep_cards_except_value(all_cards, three_of_a_kind[0].value)
+            one_pair = ScoreHelper.is_one_pair(Hole(rest[0], rest[1]), rest[2:])
 
             if one_pair:
-                return [three_of_a_kind[0], one_pair[0][0]]
+                return [*three_of_a_kind[:3], *one_pair[:2]]
 
         return False
 
     @staticmethod
-    def is_flush(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
+    def is_flush(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
         suits = {"Hearts": [], "Clubs": [], "Diamonds": [], "Spades": []}
 
-        for card in all_cards:
+        for card in ScoreHelper.greatest_to_least(all_cards):
             suits[card.suit].append(card)
 
-        for suit, cards in suits.items():
-            if len(cards) >= 5:
-                return ScoreHelper.greatest_to_least(cards)
+            if len(suits[card.suit]) == 5:
+                return suits[card.suit]
 
         return False
 
     @staticmethod
-    def is_straight(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
+    def is_straight(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
         values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
                   "4": [], "3": [], "2": [], "Ace2": []}
 
@@ -93,133 +104,126 @@ class ScoreHelper:
 
             values[card.value].append(card)
 
-        streak = 0
-        streak_card = None
+        streak_cards = []
+        for value, cards in values.items():
+            if len(cards) > 0:
+                streak_cards.append(cards[0])
+            else:
+                streak_cards = []
+
+            if len(streak_cards) == 5:
+                return streak_cards
+
+        return False
+
+    @staticmethod
+    def is_three_of_a_kind(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
+                  "4": [], "3": [], "2": []}
+
+        for card in ScoreHelper.greatest_to_least(all_cards):
+            values[card.value].append(card)
+
+            if len(values[card.value]) == 3:
+                return [*values[card.value],
+                        *ScoreHelper.greatest_to_least(ScoreHelper.keep_cards_except_value(all_cards, card.value))[:2]]
+
+        return False
+
+    @staticmethod
+    def is_two_pair(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
+                  "4": [], "3": [], "2": []}
+
+        values_with_pairs = []
+        for card in ScoreHelper.greatest_to_least(all_cards):
+            values[card.value].append(card)
+
+            if len(values[card.value]) == 2:
+                values_with_pairs.append(card.value)
+
+        if len(values_with_pairs) >= 2:
+            return [*values[values_with_pairs[0]], *values[values_with_pairs[1]],
+                    ScoreHelper.greatest_to_least(ScoreHelper.keep_cards_except_value(
+                        all_cards, values_with_pairs[0], values_with_pairs[1]))[0]]
+
+        return False
+
+    @staticmethod
+    def is_one_pair(hole, table):
+        all_cards = ScoreHelper.convert_to_all_cards(hole, table)
+        values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
+                  "4": [], "3": [], "2": []}
+
+        for card in all_cards:
+            values[card.value].append(card)
 
         for value, cards in values.items():
-            if cards:
-                if streak == 0:
-                    streak_card = cards[0]
-
-                streak += 1
-            else:
-                streak = 0
-                streak_card = None
-
-            if streak == 5:
-                return streak_card
-
-        return False
-
-    @staticmethod
-    def is_three_of_a_kind(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
-        values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
-                  "4": [], "3": [], "2": []}
-
-        for card in all_cards:
-            values[card.value].append(card)
-
-        for cards in values.values():
-            if len(cards) == 3:
-                return cards
-
-        return False
-
-    @staticmethod
-    def is_two_pair(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
-        one_pair = ScoreHelper.is_one_pair(hand, table)
-
-        if one_pair:
-            two_pair = ScoreHelper.is_one_pair(Hand(one_pair[1][0], one_pair[1][1]), one_pair[1][2:])
-
-            if two_pair:
-                return [ScoreHelper.greatest_to_least([one_pair[0][0], two_pair[0][0]]),
-                        ScoreHelper.greatest_to_least([c for c in all_cards if c not in one_pair[0]
-                                                       and c not in two_pair[0]])]
-
-        return False
-
-    @staticmethod
-    def is_one_pair(hand, table):
-        all_cards = ScoreHelper.convert_to_all_cards(hand, table)
-        values = {"Ace": [], "King": [], "Queen": [], "Jack": [], "10": [], "9": [], "8": [], "7": [], "6": [], "5": [],
-                  "4": [], "3": [], "2": []}
-
-        for card in all_cards:
-            values[card.value].append(card)
-
-        for cards in values.values():
             if len(cards) >= 2:
-                return [cards, ScoreHelper.greatest_to_least([c for c in all_cards if c not in cards])]
+                return [*cards[:2],
+                        *ScoreHelper.greatest_to_least(ScoreHelper.keep_cards_except_value(all_cards, value))[:3]]
 
         return False
 
     @staticmethod
-    def is_high_card(hand, table):
-        return ScoreHelper.greatest_to_least(ScoreHelper.convert_to_all_cards(hand, table))
+    def is_high_card(hole, table):
+        return ScoreHelper.greatest_to_least(ScoreHelper.convert_to_all_cards(hole, table))[:5]
 
 
 class Score:
     @staticmethod
-    def classify_hand(hand, table):
-        if ScoreHelper.is_royal_flush(hand, table):
-            return {"rank": 1, "tie-breaker": [14]}
+    def classify_hand(hole, table):
+        if royal_flush := ScoreHelper.is_royal_flush(hole, table):
+            return {"rank": "Royal Flush", "hand": royal_flush}
 
-        if straight_flush := ScoreHelper.is_straight_flush(hand, table):
-            return {"rank": 2, "tie-breaker": [straight_flush.num_value]}
+        if straight_flush := ScoreHelper.is_straight_flush(hole, table):
+            return {"rank": "Straight Flush", "hand": straight_flush}
 
-        if four_of_a_kind := ScoreHelper.is_four_of_a_kind(hand, table):
-            return {"rank": 3, "tie-breaker": [four_of_a_kind.num_value]}
+        if four_of_a_kind := ScoreHelper.is_four_of_a_kind(hole, table):
+            return {"rank": "Four of a Kind", "hand": four_of_a_kind}
 
-        if full_house := ScoreHelper.is_full_house(hand, table):
-            return {"rank": 4, "tie-breaker": [*map(lambda c: c.num_value, full_house)]}
+        if full_house := ScoreHelper.is_full_house(hole, table):
+            return {"rank": "Full House", "hand": full_house}
 
-        if flush := ScoreHelper.is_flush(hand, table):
-            return {"rank": 5, "tie-breaker": [*map(lambda c: c.num_value, flush)]}
+        if flush := ScoreHelper.is_flush(hole, table):
+            return {"rank": "Flush", "hand": flush}
 
-        if straight := ScoreHelper.is_straight(hand, table):
-            return {"rank": 6, "tie-breaker": [straight.num_value]}
+        if straight := ScoreHelper.is_straight(hole, table):
+            return {"rank": "Straight", "hand": straight}
 
-        if three_of_a_kind := ScoreHelper.is_three_of_a_kind(hand, table):
-            return {"rank": 7, "tie-breaker": [three_of_a_kind[0].num_value]}
+        if three_of_a_kind := ScoreHelper.is_three_of_a_kind(hole, table):
+            return {"rank": "Three of a Kind", "hand": three_of_a_kind}
 
-        if two_pair := ScoreHelper.is_two_pair(hand, table):
-            return {"rank": 8, "tie-breaker": [*map(lambda c: c.num_value, two_pair[0]),
-                                               *map(lambda c: c.num_value, two_pair[1])]}
+        if two_pair := ScoreHelper.is_two_pair(hole, table):
+            return {"rank": "Two Pair", "hand": two_pair}
 
-        if one_pair := ScoreHelper.is_one_pair(hand, table):
-            return {"rank": 9, "tie-breaker": [one_pair[0][0].num_value, *map(lambda c: c.num_value, one_pair[1])]}
+        if one_pair := ScoreHelper.is_one_pair(hole, table):
+            return {"rank": "One Pair", "hand": one_pair}
 
-        high_card = ScoreHelper.is_high_card(hand, table)
-        return {"rank": 10, "tie-breaker": [*map(lambda c: c.num_value, high_card)]}
+        return {"rank": "High Card", "hand": ScoreHelper.is_high_card(hole, table)}
 
     @staticmethod
-    def determine_winner(hands, table):
-        rank_to_hand = {1: "Royal Flush", 2: "Straight Flush", 3: "Four of a Kind", 4: "Full House", 5: "Flush",
-                        6: "Straight", 7: "Three of a Kind", 8: "Two Pair", 9: "One Pair", 10: "High Card"}
-        scores = {}
+    def determine_winner(holes, table):
+        rank_to_num = {"Royal Flush": 1, "Straight Flush": 2, "Four of a Kind": 3, "Full House": 4, "Flush": 5,
+                       "Straight": 6, "Three of a Kind": 7, "Two Pair": 8, "One Pair": 9, "High Card": 10}
 
-        for i in range(len(hands)):
-            scores[i] = Score.classify_hand(hands[i], table)
+        hands = {hole_idx: Score.classify_hand(hole, table) for hole_idx, hole in enumerate(holes)}
 
-        ordered_scores = dict(sorted(scores.items(), key=lambda item: item[1]['rank']))
-        highest_score = 10
-        for key, value in dict(ordered_scores).items():
-            if value['rank'] <= highest_score:
-                highest_score = value['rank']
-            else:
-                del ordered_scores[key]
+        max_rank_num = min([rank_to_num[hand_info['rank']] for hand_info in hands.values()])
+        filtered_hands = {k: v for k, v in hands.items() if rank_to_num[v['rank']] == max_rank_num}
 
-        if len(ordered_scores) > 1:
-            ordered_scores = dict(sorted(ordered_scores.items(), key=lambda item: item[1]['tie-breaker'], reverse=True))
-            best_tiebreaker = list(ordered_scores.values())[0]['tie-breaker']
-            tie_idx = [idx for idx, hand in reversed(ordered_scores.items()) if hand['tie-breaker'] == best_tiebreaker]
+        # If there is more than 1 of the same ranked hand then sort by the hand kickers which are the card values
+        if len(filtered_hands) > 1:
+            hand_kicker = max([[c.num_value for c in hand_info['hand']] for hand_info in filtered_hands.values()])
+            filtered_hands = {k: v for k, v in filtered_hands.items() if [c.num_value for c in v['hand']] == hand_kicker}
 
-            if len(tie_idx) > 1:
-                return {"winner-index": sorted(tie_idx),
-                        "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}
+        # If there is a tie
+        if len(filtered_hands) > 1:
+            tie_idx = sorted(list(filtered_hands.keys()))
+            hands = [v['hand'] for v in filtered_hands.values()]
+            return {'winner-index': tie_idx, 'rank': list(filtered_hands.values())[0]['rank'], 'hand': hands}
 
-        return {"winner-index": [list(ordered_scores.keys())[0]],
-                "hand": rank_to_hand[list(ordered_scores.values())[0]['rank']]}
+        return {'winner-index': list(filtered_hands.keys()), 'rank': list(filtered_hands.values())[0]['rank'],
+                'hand': list(filtered_hands.values())[0]['hand']}
