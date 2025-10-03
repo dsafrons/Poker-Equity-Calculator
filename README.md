@@ -1,4 +1,4 @@
-# Poker Odds (Python)
+# Poker Equity Calculator
 
 A Python program to calculate, simulate, and visualize poker hand odds.  
 The code is written in an **object-oriented, Java-esque style**, with dedicated classes for cards, hands, scoring, and visualization.
